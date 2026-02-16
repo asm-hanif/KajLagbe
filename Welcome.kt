@@ -33,6 +33,7 @@ fun Welcome(navController: NavController) {
 
     Box(modifier = Modifier.fillMaxSize()) {
 
+        /* 🔹 Background Image */
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = "Welcome Background",
@@ -40,6 +41,7 @@ fun Welcome(navController: NavController) {
             modifier = Modifier.fillMaxSize()
         )
 
+        /* ✅ Buttons at Bottom */
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -89,7 +91,7 @@ fun Welcome(navController: NavController) {
                         Text(
                             text = "Create Account",
                             fontWeight = FontWeight.Bold,
-                            color = Color.Blue
+                            color = Color.White
                         )
                     }
                 }
