@@ -89,7 +89,7 @@ fun Welcome(navController: NavController) {
                         Text(
                             text = "Create Account",
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.Blue
                         )
                     }
                 }
