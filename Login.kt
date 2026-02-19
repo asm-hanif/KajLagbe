@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun Login(navController: NavController) {
@@ -21,9 +22,22 @@ fun Login(navController: NavController) {
     val darkBlue = Color(0xFF0D1B2A)
     val orange = Color(0xFFFF8C00)
 
+    val auth = FirebaseAuth.getInstance()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
     var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    /* ✅ Auto Skip Login if Already Logged In */
+    LaunchedEffect(Unit) {
+        if (auth.currentUser != null) {
+            navController.navigate(Routes.HOME) {
+                popUpTo(Routes.LOGIN) { inclusive = true }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -71,7 +85,7 @@ fun Login(navController: NavController) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
 
-        /* 🔴 Error Message (optional placeholder) */
+        /* 🔴 Error Message */
         if (errorMessage.isNotEmpty()) {
             Spacer(modifier = Modifier.height(10.dp))
             Text(text = errorMessage, color = Color.Red, fontSize = 13.sp)
@@ -79,28 +93,71 @@ fun Login(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        /* 🔹 Login Button (no Firebase logic) */
+        /* 🔹 Login Button */
         Button(
             onClick = {
-                // Placeholder action – you can add validation or a simple toast later
-                if (email.isBlank() || password.isBlank()) {
+
+                val cleanEmail = email.trim()
+                val cleanPassword = password.trim()
+
+                if (cleanEmail.isBlank() || cleanPassword.isBlank()) {
                     errorMessage = "Please enter email and password"
-                } else {
-                    errorMessage = "" // clear any previous error
-                    // TODO: Handle login without Firebase
+                    return@Button
                 }
+
+                isLoading = true
+                errorMessage = ""
+
+                auth.signInWithEmailAndPassword(cleanEmail, cleanPassword)
+                    .addOnCompleteListener { task ->
+
+                        isLoading = false
+
+                        if (task.isSuccessful) {
+
+                            navController.navigate(Routes.HOME) {
+                                popUpTo(Routes.LOGIN) { inclusive = true }
+                            }
+
+                        } else {
+
+                            errorMessage = when {
+                                task.exception?.message?.contains("password") == true ->
+                                    "Wrong password ❌"
+
+                                task.exception?.message?.contains("no user") == true ->
+                                    "Account not found ❌"
+
+                                task.exception?.message?.contains("network") == true ->
+                                    "No internet connection 🌐"
+
+                                else ->
+                                    "Login failed. Try again!"
+                            }
+                        }
+                    }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = orange)
+            colors = ButtonDefaults.buttonColors(containerColor = orange),
+            enabled = !isLoading
         ) {
-            Text("Login", fontWeight = FontWeight.Bold, color = Color.White)
+
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(22.dp)
+                )
+            } else {
+                Text("Login", fontWeight = FontWeight.Bold, color = Color.White)
+            }
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        /* 🔹 Sign Up Link (kept for navigation) */
+        /* 🔹 Sign Up Link */
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Don't have an account? ", fontSize = 14.sp, color = Color.Gray)
 
