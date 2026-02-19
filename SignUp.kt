@@ -14,6 +14,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun SignUp(navController: NavController) {
@@ -21,12 +23,25 @@ fun SignUp(navController: NavController) {
     val darkBlue = Color(0xFF0D1B2A)
     val orange = Color(0xFFFF8C00)
 
+    val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
+
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var rePassword by remember { mutableStateOf("") }
 
     var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    /* ✅ Auto Skip Signup if Already Logged In */
+    LaunchedEffect(Unit) {
+        if (auth.currentUser != null) {
+            navController.navigate(Routes.HOME) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -125,10 +140,10 @@ fun SignUp(navController: NavController) {
 
         Spacer(modifier = Modifier.height(26.dp))
 
-        /* 🔹 SignUp Button (no Firebase) */
+        /* 🔹 SignUp Button */
         Button(
             onClick = {
-                // Basic validation only
+
                 val cleanName = name.trim()
                 val cleanEmail = email.trim()
                 val cleanPassword = password.trim()
@@ -149,21 +164,83 @@ fun SignUp(navController: NavController) {
                     }
 
                     else -> {
-                        errorMessage = "" // clear error
-                        // TODO: Handle signup without Firebase
+
+                        isLoading = true
+                        errorMessage = ""
+
+                        auth.createUserWithEmailAndPassword(cleanEmail, cleanPassword)
+                            .addOnCompleteListener { task ->
+
+                                if (task.isSuccessful) {
+
+                                    val uid =
+                                        auth.currentUser?.uid ?: return@addOnCompleteListener
+
+                                    /* ✅ Save User Data in Firestore */
+                                    val userData = mapOf(
+                                        "uid" to uid,
+                                        "name" to cleanName,
+                                        "email" to cleanEmail,
+                                        "role" to "user",
+                                        "createdAt" to System.currentTimeMillis()
+                                    )
+
+                                    firestore.collection("users")
+                                        .document(uid)
+                                        .set(userData)
+                                        .addOnSuccessListener {
+
+                                            isLoading = false
+
+                                            navController.navigate(Routes.HOME) {
+                                                popUpTo(0) { inclusive = true }
+                                            }
+                                        }
+                                        .addOnFailureListener {
+                                            isLoading = false
+                                            errorMessage =
+                                                "User saved failed: ${it.message}"
+                                        }
+
+                                } else {
+
+                                    isLoading = false
+
+                                    errorMessage = when {
+                                        task.exception?.message?.contains("email") == true ->
+                                            "Email already exists ❌"
+
+                                        task.exception?.message?.contains("network") == true ->
+                                            "No internet connection 🌐"
+
+                                        else ->
+                                            "Sign up failed. Try again!"
+                                    }
+                                }
+                            }
                     }
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = darkBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = darkBlue),
+            enabled = !isLoading
         ) {
-            Text(
-                "Sign Up",
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(22.dp)
+                )
+            } else {
+                Text(
+                    "Sign Up",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(18.dp))
