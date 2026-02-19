@@ -36,6 +36,9 @@ class MainActivity : ComponentActivity() {
                     composable(Routes.SIGNUP) {
                         SignUp(navController)
                     }
+                    composable(Routes.HOME) {
+                        Home(navController)
+                    }
                 }
             }
         }
