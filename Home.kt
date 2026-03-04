@@ -14,12 +14,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 
-/* ---------------- WORKER MODEL (unchanged) ---------------- */
+/* ---------------- WORKER MODEL ---------------- */
 data class Worker(
     val uid: String = "",
     val name: String = "",
@@ -30,76 +34,22 @@ data class Worker(
     val location: String = ""
 )
 
-/* ---------------- DUMMY DATA & LOCAL USER ---------------- */
-// Hardcoded current user (simulate logged-in user)
-val CURRENT_USER_ID = "user123"
-val CURRENT_USER_IS_WORKER = false // set to true to test worker-specific UI
-
-// Dummy workers list (replaces Firestore)
-val DUMMY_WORKERS = listOf(
-    Worker(
-        uid = "worker1",
-        name = "Rahim Mia",
-        gender = "Male",
-        workType = "Plumber",
-        institute = "Dhaka Polytechnic",
-        contact = "01712345678",
-        location = "Mirpur"
-    ),
-    Worker(
-        uid = "worker2",
-        name = "Karima Begum",
-        gender = "Female",
-        workType = "Electrician",
-        institute = "Technical Training Center",
-        contact = "01898765432",
-        location = "Uttara"
-    ),
-    Worker(
-        uid = "worker3",
-        name = "Shofiq Ahmed",
-        gender = "Male",
-        workType = "Carpenter",
-        institute = "Mohammadpur Technical",
-        contact = "01911223344",
-        location = "Mohammadpur"
-    ),
-    Worker(
-        uid = "worker4",
-        name = "Nasrin Sultana",
-        gender = "Female",
-        workType = "Painter",
-        institute = "Shilpakala Academy",
-        contact = "01655577788",
-        location = "Dhanmondi"
-    ),
-    Worker(
-        uid = "worker5",
-        name = "Abdul Karim",
-        gender = "Male",
-        workType = "Mason",
-        institute = "BUET",
-        contact = "01533445566",
-        location = "Motijheel"
-    )
-)
-
 /* ---------------- HOME SCREEN ---------------- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Home(navController: NavController) {
 
-    // No Firebase – we use the hardcoded current user
-    val currentUid = CURRENT_USER_ID
-    val isWorker = CURRENT_USER_IS_WORKER
+    val firestore = FirebaseFirestore.getInstance()
+    val auth = FirebaseAuth.getInstance()
+
+    val currentUid = auth.currentUser?.uid ?: return
 
     val darkBlue = Color(0xFF0D1B2A)
     val orange = Color(0xFFFF8C00)
 
     /* ---------------- STATES ---------------- */
-    // Load dummy workers immediately (no loading from network)
-    val workers = remember { mutableStateListOf<Worker>().apply { addAll(DUMMY_WORKERS) } }
-    var loading by remember { mutableStateOf(false) } // no loading needed, but kept for compatibility
+    var workers by remember { mutableStateOf<List<Worker>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
 
     /* SEARCH */
     var searchText by remember { mutableStateOf("") }
@@ -109,6 +59,37 @@ fun Home(navController: NavController) {
     var filterLocation by remember { mutableStateOf("") }
 
     var showFilterPopup by remember { mutableStateOf(false) }
+
+    /* CHECK WORKER */
+    var isWorker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        firestore.collection("workers")
+            .document(currentUid)
+            .get()
+            .addOnSuccessListener {
+                isWorker = it.exists()
+            }
+    }
+
+    /* ---------------- LOAD WORKERS LIVE ---------------- */
+    DisposableEffect(Unit) {
+
+        val listener: ListenerRegistration =
+            firestore.collection("workers")
+                .addSnapshotListener { snapshot, _ ->
+
+                    if (snapshot != null) {
+                        workers = snapshot.documents.mapNotNull { doc ->
+                            val worker = doc.toObject(Worker::class.java)
+                            worker?.copy(uid = doc.id)
+                        }
+                        loading = false
+                    }
+                }
+
+        onDispose { listener.remove() }
+    }
 
     /* ---------------- FILTERED WORKERS ---------------- */
     val filteredWorkers = workers.filter { worker ->
@@ -133,7 +114,7 @@ fun Home(navController: NavController) {
 
         Column(modifier = Modifier.fillMaxSize()) {
 
-            /* TOP BAR (fixed) */
+            /* ✅ FIXED TOP BAR (WILL NOT SCROLL) */
             TopAppBar(
                 title = {
                     Row {
@@ -166,7 +147,7 @@ fun Home(navController: NavController) {
                 }
             )
 
-            /* SCROLLABLE CONTENT */
+            /* ✅ EVERYTHING BELOW IS SCROLLABLE */
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 90.dp),
@@ -177,7 +158,7 @@ fun Home(navController: NavController) {
 
                     Spacer(Modifier.height(12.dp))
 
-                    /* TOP BUTTONS */
+                    /* ---------------- TOP BUTTONS ---------------- */
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -192,7 +173,7 @@ fun Home(navController: NavController) {
                             colors = ButtonDefaults.buttonColors(containerColor = orange),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("My Requests", color = Color.White)
+                            Text(stringResource(R.string.my_requests), color = Color.White)
                         }
 
                         /* USER → NEED JOB */
@@ -204,7 +185,7 @@ fun Home(navController: NavController) {
                                 colors = ButtonDefaults.buttonColors(containerColor = darkBlue),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Need Job?", color = Color.White)
+                                Text(stringResource(R.string.need_job), color = Color.White)
                             }
                         }
 
@@ -217,18 +198,18 @@ fun Home(navController: NavController) {
                                 colors = ButtonDefaults.buttonColors(containerColor = darkBlue),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Works", color = Color.White)
+                                Text(stringResource(R.string.works), color = Color.White)
                             }
                         }
                     }
 
                     Spacer(Modifier.height(14.dp))
 
-                    /* SEARCH BAR */
+                    /* ---------------- SEARCH BAR ---------------- */
                     OutlinedTextField(
                         value = searchText,
                         onValueChange = { searchText = it },
-                        placeholder = { Text("Search workers by work type...") },
+                        placeholder = { Text(stringResource(R.string.search_placeholder)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
@@ -237,7 +218,7 @@ fun Home(navController: NavController) {
 
                     Spacer(Modifier.height(10.dp))
 
-                    /* FILTER BUTTON */
+                    /* ---------------- FILTER BUTTON ---------------- */
                     Button(
                         onClick = { showFilterPopup = true },
                         modifier = Modifier
@@ -245,13 +226,13 @@ fun Home(navController: NavController) {
                             .padding(horizontal = 16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = darkBlue)
                     ) {
-                        Text("Filter", color = Color.White)
+                        Text(stringResource(R.string.filter), color = Color.White)
                     }
 
                     Spacer(Modifier.height(12.dp))
                 }
 
-                /* WORKERS LIST */
+                /* ---------------- WORKERS LIST ---------------- */
                 if (loading) {
                     item {
                         Box(
@@ -264,7 +245,7 @@ fun Home(navController: NavController) {
                 } else if (filteredWorkers.isEmpty()) {
                     item {
                         Text(
-                            "No workers found 😶",
+                            stringResource(R.string.no_workers),
                             color = Color.Gray,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
@@ -277,7 +258,7 @@ fun Home(navController: NavController) {
             }
         }
 
-        /* FLOATING INBOX BUTTON */
+        /* ---------------- FLOATING INBOX BUTTON ---------------- */
         FloatingActionButton(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -293,7 +274,7 @@ fun Home(navController: NavController) {
             Icon(Icons.Default.Chat, contentDescription = "Inbox", tint = Color.White)
         }
 
-        /* FILTER POPUP */
+        /* ---------------- FILTER POPUP ---------------- */
         if (showFilterPopup) {
 
             AlertDialog(
@@ -305,7 +286,7 @@ fun Home(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Filter Workers", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.filter_workers), fontWeight = FontWeight.Bold)
 
                         IconButton(onClick = {
                             showFilterPopup = false
@@ -321,7 +302,7 @@ fun Home(navController: NavController) {
                         OutlinedTextField(
                             value = filterWorkType,
                             onValueChange = { filterWorkType = it },
-                            label = { Text("Work Type") },
+                            label = { Text(stringResource(R.string.work_type)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -331,7 +312,7 @@ fun Home(navController: NavController) {
                         OutlinedTextField(
                             value = filterLocation,
                             onValueChange = { filterLocation = it },
-                            label = { Text("Location") },
+                            label = { Text(stringResource(R.string.location)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -345,7 +326,7 @@ fun Home(navController: NavController) {
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = darkBlue)
                     ) {
-                        Text("Apply", color = Color.White)
+                        Text(stringResource(R.string.apply), color = Color.White)
                     }
                 },
 
@@ -357,7 +338,7 @@ fun Home(navController: NavController) {
                             showFilterPopup = false
                         }
                     ) {
-                        Text("Clear")
+                        Text(stringResource(R.string.clear))
                     }
                 }
             )
@@ -393,19 +374,19 @@ fun WorkerCard(
 
             Spacer(Modifier.height(6.dp))
 
-            Text("Gender: ${worker.gender}")
-            Text("Work Type: ${worker.workType}")
-            Text("Location: ${worker.location}")
-            Text("Institute: ${worker.institute}")
-            Text("Contact: ${worker.contact}")
+            Text("${stringResource(R.string.gender)}: ${worker.gender}")
+            Text("${stringResource(R.string.work_type)}: ${worker.workType}")
+            Text("${stringResource(R.string.location)}: ${worker.location}")
+            Text("${stringResource(R.string.institute)}: ${worker.institute}")
+            Text("${stringResource(R.string.contact)}: ${worker.contact}")
 
             Spacer(Modifier.height(14.dp))
 
-            /* WORKER CANNOT REQUEST HIMSELF */
+            /* ✅ WORKER CANNOT REQUEST HIMSELF */
             if (worker.uid == currentUid) {
 
                 Text(
-                    "This is you 👤",
+                    stringResource(R.string.this_is_you),
                     color = Color.Gray,
                     fontWeight = FontWeight.Bold
                 )
@@ -419,7 +400,7 @@ fun WorkerCard(
                         navController.navigate("${Routes.REQUEST_JOB}/${worker.uid}")
                     }
                 ) {
-                    Text("Request Job", color = Color.White)
+                    Text(stringResource(R.string.request_job), color = Color.White)
                 }
             }
         }
