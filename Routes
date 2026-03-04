@@ -21,6 +21,5 @@ object Routes {
 
     const val CHAT = "chat"
 
-    // ✅ ADD THIS
     const val WORKER_REGISTER = "workerRegister"
 }
