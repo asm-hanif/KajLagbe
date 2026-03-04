@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -73,7 +74,7 @@ fun Welcome(navController: NavController) {
                         colors = ButtonDefaults.buttonColors(containerColor = orange)
                     ) {
                         Text(
-                            text = "Login",
+                            text = stringResource(id = R.string.logout).let { if (it == "Log Out") "Login" else "লগইন" },
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -89,7 +90,7 @@ fun Welcome(navController: NavController) {
                         colors = ButtonDefaults.buttonColors(containerColor = darkBlue)
                     ) {
                         Text(
-                            text = "Create Account",
+                            text = stringResource(id = R.string.logout).let { if (it == "Log Out") "Create Account" else "অ্যাকাউন্ট তৈরি করুন" },
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
