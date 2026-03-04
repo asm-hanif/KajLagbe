@@ -1,0 +1,11 @@
+package com.hanif.kajlagbe
+
+data class RequestModel(
+    val requestId: String = "",
+    val userId: String = "",
+    val workerId: String = "",
+    val location: String = "",
+    val note: String = "",
+    val status: String = "pending",
+    val timestamp: Long = 0L
+)
