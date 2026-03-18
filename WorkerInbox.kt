@@ -32,7 +32,6 @@ fun WorkerInbox(navController: NavController) {
             .whereEqualTo("workerId", workerId)
             .whereEqualTo("workerDeleted", false)
             .addSnapshotListener { snapshot, _ ->
-
                 if (snapshot != null) {
                     chats = snapshot.documents.map { doc ->
                         ChatItem(
@@ -45,7 +44,6 @@ fun WorkerInbox(navController: NavController) {
                             workerDeleted = doc.getBoolean("workerDeleted") ?: false
                         )
                     }.sortedByDescending { it.lastTime }
-
                     loading = false
                 }
             }
@@ -53,7 +51,7 @@ fun WorkerInbox(navController: NavController) {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = { Text(stringResource(R.string.worker_inbox)) }
             )
         }
@@ -62,7 +60,6 @@ fun WorkerInbox(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
         ) {
             if (loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -70,13 +67,14 @@ fun WorkerInbox(navController: NavController) {
                 Text(
                     text = stringResource(R.string.no_chats),
                     modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.outline
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                    contentPadding = PaddingValues(16.dp)
                 ) {
                     items(chats, key = { it.chatId }) { chat ->
                         InboxRow(
@@ -103,7 +101,7 @@ fun WorkerInbox(navController: NavController) {
             title = { Text(stringResource(R.string.delete_conversation)) },
             text = { Text(stringResource(R.string.delete_conversation_confirm)) },
             confirmButton = {
-                Button(onClick = {
+                TextButton(onClick = {
                     val chat = selectedChat!!
                     firestore.collection("chats")
                         .document(chat.chatId)
@@ -117,7 +115,7 @@ fun WorkerInbox(navController: NavController) {
                         }
                     showDeleteDialog = false
                 }) {
-                    Text(stringResource(R.string.yes))
+                    Text(stringResource(R.string.yes), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
