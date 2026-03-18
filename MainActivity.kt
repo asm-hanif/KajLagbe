@@ -3,6 +3,10 @@ package com.hanif.kajlagbe
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -11,24 +15,24 @@ import com.hanif.kajlagbe.ui.theme.KajLagbeTheme
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
-        // ✅ Language Setup
-        val lang = getSavedLanguage(this)
-        setLocale(this, lang)
-
         super.onCreate(savedInstanceState)
 
         setContent {
+            val context = LocalContext.current
+            val language by LanguageStore.getLanguage(context).collectAsStateWithLifecycle(initialValue = "en")
+
+            // ✅ Update locale when language changes
+            LaunchedEffect(language) {
+                setLocale(context, language)
+            }
 
             KajLagbeTheme {
-
                 val navController = rememberNavController()
 
                 NavHost(
                     navController = navController,
                     startDestination = Routes.AUTH_GATE
                 ) {
-
                     /* ---------------- AUTH ---------------- */
                     composable(Routes.AUTH_GATE) {
                         AuthGate(navController)
@@ -59,6 +63,14 @@ class MainActivity : ComponentActivity() {
                         Setting(navController)
                     }
 
+                    /* ---------------- WORKER DETAILS ---------------- */
+                    composable(
+                        route = "${Routes.WORKER_DETAILS}/{workerId}"
+                    ) { backStackEntry ->
+                        val workerId = backStackEntry.arguments?.getString("workerId") ?: ""
+                        WorkerDetails(workerId = workerId, navController = navController)
+                    }
+
                     /* ---------------- WORKER REGISTER ---------------- */
                     composable(Routes.WORKER_REGISTER) {
                         WorkerRegister(navController)
@@ -68,10 +80,7 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = "${Routes.REQUEST_JOB}/{workerId}"
                     ) { backStackEntry ->
-
-                        val workerId =
-                            backStackEntry.arguments?.getString("workerId") ?: ""
-
+                        val workerId = backStackEntry.arguments?.getString("workerId") ?: ""
                         RequestJob(
                             navController = navController,
                             workerId = workerId
@@ -100,14 +109,8 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = "${Routes.CHAT}/{chatId}"
                     ) { backStackEntry ->
-
-                        val chatId =
-                            backStackEntry.arguments?.getString("chatId") ?: ""
-
-                        // ✅ FIXED: ChatScreen only takes chatId
-                        ChatScreen(
-                            chatId = chatId
-                        )
+                        val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
+                        ChatScreen(chatId = chatId)
                     }
                 }
             }
