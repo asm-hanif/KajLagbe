@@ -14,25 +14,24 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
 fun Setting(navController: NavController) {
 
-    val darkBlue = Color(0xFF0D1B2A)
-    val orange = Color(0xFFFF8C00)
-
     val context = LocalContext.current
     val activity = context as Activity
     val auth = FirebaseAuth.getInstance()
+    val scope = rememberCoroutineScope()
 
-    /* 🔥 LOAD SAVED LANGUAGE */
-    var isEnglish by remember {
-        mutableStateOf(getSavedLanguage(context) == "en")
-    }
+    /* 🔥 LOAD SAVED LANGUAGE USING DATASTORE */
+    val language by LanguageStore.getLanguage(context).collectAsStateWithLifecycle(initialValue = "en")
+    val isEnglish = language == "en"
 
     /* 🔐 Change Password Dialog State */
     var showChangePassword by remember { mutableStateOf(false) }
@@ -46,8 +45,8 @@ fun Setting(navController: NavController) {
 
         /* 🔹 Header */
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text("Kaj", fontSize = 34.sp, fontWeight = FontWeight.Black, color = darkBlue)
-            Text("Lagbe", fontSize = 34.sp, fontWeight = FontWeight.Black, color = orange)
+            Text("Kaj", fontSize = 34.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
+            Text("Lagbe", fontSize = 34.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
         }
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -57,7 +56,7 @@ fun Setting(navController: NavController) {
             text = stringResource(R.string.language),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = darkBlue
+            color = MaterialTheme.colorScheme.secondary
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -66,22 +65,22 @@ fun Setting(navController: NavController) {
         Button(
             onClick = {
                 val newLang = if (isEnglish) "bn" else "en"
-                saveLanguage(context, newLang)
-                setLocale(context, newLang)
-                
-                // ✅ This ensures the whole app updates its locale
-                activity.recreate()
+                scope.launch {
+                    LanguageStore.saveLanguage(context, newLang)
+                    setLocale(context, newLang)
+                    activity.recreate()
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = orange)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text(
                 text = stringResource(R.string.switch_language),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
 
@@ -93,13 +92,13 @@ fun Setting(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = orange)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text(
                 text = stringResource(R.string.change_password),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
 
@@ -116,13 +115,13 @@ fun Setting(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = darkBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
             Text(
                 text = stringResource(R.string.logout),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSecondary
             )
         }
     }
@@ -270,19 +269,6 @@ fun Setting(navController: NavController) {
 }
 
 /* ---------------- LANGUAGE HELPERS ---------------- */
-
-private fun saveLanguage(context: Context, lang: String) {
-    context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        .edit()
-        .putString("language", lang)
-        .apply()
-}
-
-fun getSavedLanguage(context: Context): String {
-    return context
-        .getSharedPreferences("settings", Context.MODE_PRIVATE)
-        .getString("language", "en") ?: "en"
-}
 
 fun setLocale(context: Context, language: String) {
     val locale = Locale(language)
