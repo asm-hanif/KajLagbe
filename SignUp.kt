@@ -18,13 +18,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun SignUp(navController: NavController) {
-
-    val darkBlue = Color(0xFF0D1B2A)
-    val orange = Color(0xFFFF8C00)
 
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
@@ -39,8 +37,7 @@ fun SignUp(navController: NavController) {
 
     val scrollState = rememberScrollState()
 
-    // Pre-calculate strings for use inside non-composable lambdas
-    val isEnglish = stringResource(R.string.logout) == "Log Out"
+    // Strings from resources
     val allFieldsRequired = stringResource(R.string.all_fields_required)
     val passwordLengthError = stringResource(R.string.password_length_error)
     val passwordsDoNotMatch = stringResource(R.string.passwords_do_not_match)
@@ -74,33 +71,25 @@ fun SignUp(navController: NavController) {
                     "Kaj",
                     fontSize = 34.sp,
                     fontWeight = FontWeight.Black,
-                    color = darkBlue
+                    color = MaterialTheme.colorScheme.secondary
                 )
                 Text(
                     "Lagbe",
                     fontSize = 34.sp,
                     fontWeight = FontWeight.Black,
-                    color = orange
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
             Spacer(modifier = Modifier.height(40.dp))
 
             /* 🔹 Title */
-            Row {
-                Text(
-                    text = if (isEnglish) "Sign" else "সাইন",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = darkBlue
-                )
-                Text(
-                    text = if (isEnglish) "Up" else "আপ",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = orange
-                )
-            }
+            Text(
+                text = stringResource(R.string.signup),
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.secondary
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -110,7 +99,8 @@ fun SignUp(navController: NavController) {
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.name)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             Spacer(Modifier.height(12.dp))
@@ -121,7 +111,8 @@ fun SignUp(navController: NavController) {
                 label = { Text(stringResource(R.string.email)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             Spacer(Modifier.height(12.dp))
@@ -132,7 +123,9 @@ fun SignUp(navController: NavController) {
                 label = { Text(stringResource(R.string.password)) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = MaterialTheme.shapes.medium
             )
 
             Spacer(Modifier.height(12.dp))
@@ -143,7 +136,9 @@ fun SignUp(navController: NavController) {
                 label = { Text(stringResource(R.string.reenter_password)) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = MaterialTheme.shapes.medium
             )
 
             /* 🔴 Error Message */
@@ -151,7 +146,7 @@ fun SignUp(navController: NavController) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = errorMessage,
-                    color = Color.Red,
+                    color = MaterialTheme.colorScheme.error,
                     fontSize = 13.sp
                 )
             }
@@ -161,7 +156,6 @@ fun SignUp(navController: NavController) {
             /* 🔹 SignUp Button */
             Button(
                 onClick = {
-
                     val cleanName = name.trim()
                     val cleanEmail = email.trim()
                     val cleanPassword = password.trim()
@@ -172,29 +166,28 @@ fun SignUp(navController: NavController) {
                                 || cleanPassword.isBlank() || cleanRePassword.isBlank() -> {
                             errorMessage = allFieldsRequired
                         }
-
                         cleanPassword.length < 6 -> {
                             errorMessage = passwordLengthError
                         }
-
                         cleanPassword != cleanRePassword -> {
                             errorMessage = passwordsDoNotMatch
                         }
-
                         else -> {
-
                             isLoading = true
                             errorMessage = ""
 
                             auth.createUserWithEmailAndPassword(cleanEmail, cleanPassword)
                                 .addOnCompleteListener { task ->
-
                                     if (task.isSuccessful) {
+                                        val user = auth.currentUser
+                                        val uid = user?.uid ?: return@addOnCompleteListener
+                                        
+                                        // Update Firebase Auth Display Name
+                                        val profileUpdates = userProfileChangeRequest {
+                                            displayName = cleanName
+                                        }
+                                        user.updateProfile(profileUpdates)
 
-                                        val uid =
-                                            auth.currentUser?.uid ?: return@addOnCompleteListener
-
-                                        /* ✅ Save User Data in Firestore */
                                         val userData = mapOf(
                                             "uid" to uid,
                                             "name" to cleanName,
@@ -202,14 +195,11 @@ fun SignUp(navController: NavController) {
                                             "role" to "user",
                                             "createdAt" to System.currentTimeMillis()
                                         )
-
                                         firestore.collection("users")
                                             .document(uid)
                                             .set(userData)
                                             .addOnSuccessListener {
-
                                                 isLoading = false
-
                                                 navController.navigate(Routes.HOME) {
                                                     popUpTo(0) { inclusive = true }
                                                 }
@@ -218,11 +208,8 @@ fun SignUp(navController: NavController) {
                                                 isLoading = false
                                                 errorMessage = userSaveFailedTemplate.format(it.message)
                                             }
-
                                     } else {
-
                                         isLoading = false
-
                                         errorMessage = when {
                                             task.exception?.message?.contains("email") == true -> emailExists
                                             task.exception?.message?.contains("network") == true -> noInternet
@@ -236,20 +223,20 @@ fun SignUp(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = darkBlue),
-                enabled = !isLoading
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                enabled = !isLoading,
+                shape = MaterialTheme.shapes.medium
             ) {
-
                 if (isLoading) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSecondary,
                         strokeWidth = 2.dp,
                         modifier = Modifier.size(22.dp)
                     )
                 } else {
                     Text(
                         stringResource(R.string.signup),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSecondary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -262,14 +249,16 @@ fun SignUp(navController: NavController) {
                 Text(
                     stringResource(R.string.already_have_account),
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.outline
                 )
 
+                Spacer(modifier = Modifier.width(4.dp))
+
                 Text(
-                    text = if (isEnglish) "Login" else "লগইন",
+                    text = stringResource(R.string.login),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = orange,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.clickable {
                         navController.navigate(Routes.LOGIN)
                     }
