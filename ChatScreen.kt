@@ -32,7 +32,7 @@ fun ChatScreen(chatId: String) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedMsgTime by remember { mutableStateOf<Long?>(null) }
 
-    /* ✅ Load Messages */
+    /* Load Messages */
     LaunchedEffect(chatId) {
         firestore.collection("chats")
             .document(chatId)
@@ -65,7 +65,7 @@ fun ChatScreen(chatId: String) {
                 .padding(horizontal = 12.dp)
         ) {
 
-            /* ✅ Messages List */
+            /* Messages List */
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -79,7 +79,7 @@ fun ChatScreen(chatId: String) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
                     ) {
-                        /* 🕒 Message Time */
+                        /* Message Time */
                         Text(
                             text = formatMessageTime(msg.time),
                             fontSize = 10.sp,
@@ -120,7 +120,7 @@ fun ChatScreen(chatId: String) {
 
             Spacer(Modifier.height(8.dp))
 
-            /* ✅ Send Box */
+            /* Send Box */
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -186,7 +186,7 @@ fun ChatScreen(chatId: String) {
         }
     }
 
-    /* ✅ Delete Message Popup */
+    /* Delete Message Popup */
     if (showDeleteDialog && selectedMsgTime != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
