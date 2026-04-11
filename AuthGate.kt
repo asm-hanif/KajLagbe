@@ -37,7 +37,7 @@ fun AuthGate(navController: NavController) {
         }
     }
 
-    // Loading UI while Firebase restores session
+    // Firebase restores session
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
