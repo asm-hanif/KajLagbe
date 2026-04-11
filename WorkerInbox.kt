@@ -26,7 +26,7 @@ fun WorkerInbox(navController: NavController) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedChat by remember { mutableStateOf<ChatItem?>(null) }
 
-    /* ✅ Load Worker Chats */
+    /* Load Worker Chats*/
     LaunchedEffect(Unit) {
         firestore.collection("chats")
             .whereEqualTo("workerId", workerId)
