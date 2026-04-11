@@ -94,7 +94,7 @@ fun WorkerInbox(navController: NavController) {
         }
     }
 
-    /* ✅ Delete Chat Popup */
+    /* Delete Chat Popup */
     if (showDeleteDialog && selectedChat != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
