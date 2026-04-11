@@ -28,7 +28,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserRequests(navController: NavController) {
-
     val firestore = FirebaseFirestore.getInstance()
     val user = FirebaseAuth.getInstance().currentUser ?: return
     val userId = user.uid
@@ -59,46 +58,20 @@ fun UserRequests(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { 
-                    Text(
-                        stringResource(R.string.my_requests), 
-                        fontWeight = FontWeight.Black,
-                        fontSize = 24.sp
-                    ) 
+                    Text(stringResource(R.string.my_requests), fontWeight = FontWeight.Black, fontSize = 24.sp) 
                 }
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (requests.isEmpty()) {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        Icons.Default.Inbox, 
-                        contentDescription = null, 
-                        modifier = Modifier.size(80.dp), 
-                        tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.no_requests),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = stringResource(R.string.no_requests), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.outline)
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(16.dp)
-                ) {
+                LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(16.dp)) {
                     items(requests) { request ->
                         RequestCard(request, navController, firestore, userId, realUserName, context)
                     }
@@ -132,76 +105,29 @@ fun RequestCard(
         }
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Name and Status
-            Row(
-                modifier = Modifier.fillMaxWidth(), 
-                horizontalArrangement = Arrangement.SpaceBetween, 
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = request.workerName,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 20.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.clickable {
-                        navController.navigate("${Routes.WORKER_DETAILS}/${request.workerId}")
-                    }
-                )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(text = request.workerName, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.clickable { navController.navigate("${Routes.WORKER_DETAILS}/${request.workerId}") })
                 StatusBadge(request.status)
             }
             
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = request.scheduledDate, 
-                fontSize = 12.sp, 
-                color = MaterialTheme.colorScheme.outline,
-                fontWeight = FontWeight.Medium
-            )
-
-            Divider(
-                modifier = Modifier.padding(vertical = 12.dp),
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-
-            // Details Section
+            Text(text = request.scheduledDate, fontSize = 12.sp, color = MaterialTheme.colorScheme.outline, fontWeight = FontWeight.Medium)
+            Divider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp)
             InfoRow(Icons.Default.Work, request.workType)
             Spacer(Modifier.height(8.dp))
             InfoRow(Icons.Default.LocationOn, request.location)
             Spacer(Modifier.height(8.dp))
             InfoRow(Icons.Default.Notes, request.note)
 
-            // Contact Section if Accepted
             if (request.status == "accepted" && workerContact != null) {
                 Spacer(Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-                        .clickable {
-                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$workerContact"))
-                            context.startActivity(intent)
-                        }
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center
-                    ) {
+                Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)).clickable {
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$workerContact"))
+                    context.startActivity(intent)
+                }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Call, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                     Spacer(Modifier.width(12.dp))
@@ -214,171 +140,50 @@ fun RequestCard(
 
             Spacer(Modifier.height(16.dp))
 
-            // Actions Section
             if (request.status == "pending") {
-                OutlinedButton(
-                    onClick = { showCancelDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.error))
-                ) {
-                    Icon(Icons.Default.Cancel, null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
+                OutlinedButton(onClick = { showCancelDialog = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
                     Text("Cancel Request")
                 }
-            }
-
-            if (request.status == "accepted") {
+            } else if (request.status == "accepted") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(
-                            modifier = Modifier.weight(1f),
-                            onClick = { navController.navigate("chat/$chatId") },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Chat, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
+                        Button(modifier = Modifier.weight(1f), onClick = { navController.navigate("chat/$chatId") }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary), shape = RoundedCornerShape(12.dp)) {
                             Text("Chat")
                         }
-                        
-                        Button(
-                            modifier = Modifier.weight(1f),
-                            enabled = !isProcessing,
-                            onClick = { showCompleteDialog = true },
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            if (isProcessing) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Complete")
-                            }
+                        Button(modifier = Modifier.weight(1f), enabled = !isProcessing, onClick = { showCompleteDialog = true }, shape = RoundedCornerShape(12.dp)) {
+                            Text("Complete")
                         }
                     }
-
-                    OutlinedButton(
-                        onClick = { showCancelDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.error))
-                    ) {
-                        Icon(Icons.Default.Cancel, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Cancel Job")
-                    }
                 }
-            }
-
-            if (request.status == "completed") {
-                Button(
-                    onClick = { showRatingDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB300))
-                ) {
-                    Icon(Icons.Default.Star, null, tint = Color.White)
-                    Spacer(Modifier.width(8.dp))
+            } else if (request.status == "completed") {
+                Button(onClick = { showRatingDialog = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB300))) {
                     Text("Rate Experience", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
     }
 
-    // Dialogs
-    if (showCancelDialog) {
-        AlertDialog(
-            onDismissRequest = { showCancelDialog = false },
-            title = { Text("Cancel Job?") },
-            text = { Text("Are you sure you want to cancel this job? If the job was already accepted, this will notify the worker.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showCancelDialog = false
-                        isProcessing = true
-                        
-                        firestore.collection("jobRequests")
-                            .whereEqualTo("workerId", request.workerId)
-                            .whereEqualTo("status", "accepted")
-                            .get()
-                            .addOnSuccessListener { snapshot ->
-                                val otherAccepted = snapshot.documents.any { it.id != request.requestId }
-                                
-                                firestore.runTransaction { transaction ->
-                                    val requestRef = firestore.collection("jobRequests").document(request.requestId)
-                                    val workerRef = firestore.collection("workers").document(request.workerId)
-                                    
-                                    transaction.update(requestRef, "status", "cancelled")
-                                    // Only update isBusy if the job was previously accepted
-                                    if (request.status == "accepted") {
-                                        transaction.update(workerRef, "isBusy", otherAccepted)
-                                    }
-                                    null
-                                }.addOnSuccessListener {
-                                    Toast.makeText(context, "Cancelled ✅", Toast.LENGTH_SHORT).show()
-                                    isProcessing = false
-                                }.addOnFailureListener {
-                                    isProcessing = false
-                                }
-                            }
-                    }
-                ) {
-                    Text("Yes, Cancel", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCancelDialog = false }) {
-                    Text("Back")
-                }
-            }
-        )
-    }
-
     if (showCompleteDialog) {
         AlertDialog(
             onDismissRequest = { showCompleteDialog = false },
             title = { Text("Mark as Completed?") },
-            text = { Text("Are you sure the work is finished? This will close the request and notify the worker.") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showCompleteDialog = false
-                        isProcessing = true
-                        firestore.collection("jobRequests")
-                            .whereEqualTo("workerId", request.workerId)
-                            .whereEqualTo("status", "accepted")
-                            .get()
-                            .addOnSuccessListener { snapshot ->
-                                val otherAccepted = snapshot.documents.any { it.id != request.requestId }
-                                
-                                firestore.runTransaction { transaction ->
-                                    val requestRef = firestore.collection("jobRequests").document(request.requestId)
-                                    val workerRef = firestore.collection("workers").document(request.workerId)
-                                    
-                                    transaction.update(requestRef, "status", "completed")
-                                    transaction.update(workerRef, "isBusy", otherAccepted)
-                                    
-                                    null
-                                }.addOnSuccessListener {
-                                    isProcessing = false
-                                    showRatingDialog = true
-                                }.addOnFailureListener {
-                                    isProcessing = false
-                                }
-                            }
+                TextButton(onClick = {
+                    showCompleteDialog = false
+                    isProcessing = true
+                    firestore.runTransaction { transaction ->
+                        transaction.update(firestore.collection("jobRequests").document(request.requestId), "status", "completed")
+                        transaction.update(firestore.collection("workers").document(request.workerId), "isBusy", false)
+                        null
+                    }.addOnSuccessListener {
+                        isProcessing = false
+                        showRatingDialog = true
+                    }.addOnFailureListener { e ->
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        isProcessing = false
                     }
-                ) {
-                    Text("Yes, Completed", color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCompleteDialog = false }) {
-                    Text("No, Back")
-                }
-            }
+                }) { Text("Yes") }
+            }, dismissButton = { TextButton(onClick = { showCompleteDialog = false }) { Text("No") } }
         )
     }
 
@@ -386,7 +191,7 @@ fun RequestCard(
         var rating by remember { mutableIntStateOf(5) }
         var comment by remember { mutableStateOf("") }
         var isSubmitting by remember { mutableStateOf(false) }
-        val reviewId = "${userId}_${request.workerId}"
+        val reviewId = request.requestId 
 
         LaunchedEffect(Unit) {
             firestore.collection("reviews").document(reviewId).get().addOnSuccessListener { doc ->
@@ -399,97 +204,46 @@ fun RequestCard(
 
         AlertDialog(
             onDismissRequest = { if (!isSubmitting) showRatingDialog = false },
-            title = { Text("Rate ${request.workerName}", fontWeight = FontWeight.Bold) },
+            title = { Text("Rate ${request.workerName}") },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (isSubmitting) {
-                        CircularProgressIndicator()
-                        Text("Submitting...")
-                    } else {
-                        Row {
-                            (1..5).forEach { index ->
-                                IconButton(onClick = { rating = index }) {
-                                    Icon(
-                                        if (index <= rating) Icons.Default.Star else Icons.Default.StarOutline,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFFB300),
-                                        modifier = Modifier.size(36.dp)
-                                    )
-                                }
+                    Row {
+                        (1..5).forEach { index ->
+                            IconButton(onClick = { rating = index }) {
+                                Icon(if (index <= rating) Icons.Default.Star else Icons.Default.StarOutline, null, tint = Color(0xFFFFB300), modifier = Modifier.size(36.dp))
                             }
                         }
-                        Spacer(Modifier.height(16.dp))
-                        OutlinedTextField(
-                            value = comment,
-                            onValueChange = { comment = it },
-                            label = { Text("Describe your experience (optional)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
                     }
+                    OutlinedTextField(value = comment, onValueChange = { comment = it }, label = { Text("Comment") })
                 }
             },
             confirmButton = {
-                if (!isSubmitting) {
-                    Button(
-                        onClick = {
-                            isSubmitting = true
-                            val review = Review(
-                                reviewId = reviewId,
-                                workerId = request.workerId,
-                                userId = userId,
-                                userName = userName,
-                                rating = rating,
-                                comment = comment,
-                                timestamp = Timestamp.now()
-                            )
+                Button(onClick = {
+                    isSubmitting = true
+                    val review = hashMapOf(
+                        "reviewId" to reviewId,
+                        "workerId" to request.workerId,
+                        "userId" to userId,
+                        "userName" to userName,
+                        "rating" to rating,
+                        "comment" to comment,
+                        "timestamp" to Timestamp.now()
+                    )
 
-                            val workerRef = firestore.collection("workers").document(request.workerId)
-                            val reviewRef = firestore.collection("reviews").document(reviewId)
-
-                            firestore.collection("reviews")
-                                .whereEqualTo("workerId", request.workerId)
-                                .get()
-                                .addOnSuccessListener { snapshot ->
-                                    val reviewMap = snapshot.documents.mapNotNull { 
-                                        val r = it.toObject(Review::class.java)
-                                        if (r != null) r.userId to r.rating else null
-                                    }.toMap().toMutableMap()
-                                    
-                                    reviewMap[userId] = rating
-                                    val newCount = reviewMap.size
-                                    val newSum = reviewMap.values.sum().toDouble()
-                                    val newRating = if (newCount > 0) newSum / newCount else 0.0
-
-                                    firestore.runTransaction { transaction ->
-                                        transaction.set(reviewRef, review)
-                                        transaction.update(workerRef, "rating", newRating.toFloat())
-                                        transaction.update(workerRef, "reviewCount", newCount)
-                                        null
-                                    }.addOnSuccessListener {
-                                        Toast.makeText(context, "Review saved! ✅", Toast.LENGTH_SHORT).show()
-                                        showRatingDialog = false
-                                        isSubmitting = false
-                                    }.addOnFailureListener {
-                                        Toast.makeText(context, "Failed: ${it.message}", Toast.LENGTH_SHORT).show()
-                                        isSubmitting = false
-                                    }
-                                }
-                        },
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Submit")
-                    }
-                }
-            },
-            dismissButton = {
-                if (!isSubmitting) {
-                    TextButton(onClick = { showRatingDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
+                    // JUST SAVE. Background Cloud Function will do the math.
+                    firestore.collection("reviews").document(reviewId)
+                        .set(review)
+                        .addOnSuccessListener {
+                            Toast.makeText(context, "Review saved! ✅", Toast.LENGTH_SHORT).show()
+                            showRatingDialog = false
+                            isSubmitting = false
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                            isSubmitting = false
+                        }
+                }) { Text("Submit") }
             }
         )
     }
 }
-
