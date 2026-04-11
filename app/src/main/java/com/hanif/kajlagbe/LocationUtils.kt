@@ -1,0 +1,101 @@
+package com.hanif.kajlagbe
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.location.Geocoder
+import android.os.Build
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
+import com.google.android.gms.tasks.CancellationTokenSource
+import java.util.*
+
+object LocationUtils {
+
+    @SuppressLint("MissingPermission")
+    fun getCurrentAddress(
+        context: Context,
+        onAddressFetched: (String) -> Unit,
+        onError: (String) -> Unit,
+        onGpsDisabled: (ResolvableApiException) -> Unit
+    ) {
+        // Use high accuracy and set a short interval for "fresh" location
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+            .setWaitForAccurateLocation(true) // Wait for a more precise fix
+            .setMinUpdateIntervalMillis(500)
+            .setMaxUpdateDelayMillis(1000)
+            .build()
+            
+        val builder = LocationSettingsRequest.Builder()
+            .addLocationRequest(locationRequest)
+            .setAlwaysShow(true) // Ensure the system dialog is shown if needed
+            
+        val client: SettingsClient = LocationServices.getSettingsClient(context)
+        val task = client.checkLocationSettings(builder.build())
+
+        task.addOnSuccessListener {
+            // GPS is ON, proceed to get location
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+            
+            // Using getCurrentLocation instead of getLastLocation for freshness
+            fusedLocationClient.getCurrentLocation(
+                Priority.PRIORITY_HIGH_ACCURACY,
+                CancellationTokenSource().token
+            ).addOnSuccessListener { location ->
+                if (location != null) {
+                    val geocoder = Geocoder(context, Locale.getDefault())
+                    
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        geocoder.getFromLocation(location.latitude, location.longitude, 1) { addresses ->
+                            if (addresses.isNotEmpty()) {
+                                val fullAddress = formatAddress(addresses[0])
+                                onAddressFetched(fullAddress)
+                            } else {
+                                onError("Address not found")
+                            }
+                        }
+                    } else {
+                        try {
+                            @Suppress("DEPRECATION")
+                            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            if (!addresses.isNullOrEmpty()) {
+                                val fullAddress = formatAddress(addresses[0])
+                                onAddressFetched(fullAddress)
+                            } else {
+                                onError("Address not found")
+                            }
+                        } catch (e: Exception) {
+                            onError("Geocoding failed: ${e.message}")
+                        }
+                    }
+                } else {
+                    onError("Could not get a precise location. Please try again.")
+                }
+            }.addOnFailureListener {
+                onError("Location fetch failed: ${it.message}")
+            }
+        }
+
+        task.addOnFailureListener { exception ->
+            if (exception is ResolvableApiException) {
+                onGpsDisabled(exception)
+            } else {
+                onError("Location settings not satisfied.")
+            }
+        }
+    }
+
+    private fun formatAddress(address: android.location.Address): String {
+        val addressLine = address.getAddressLine(0)
+        if (addressLine != null) return addressLine
+        
+        // Fallback for fragmented address data
+        val parts = listOfNotNull(
+            address.featureName,
+            address.thoroughfare,
+            address.subLocality,
+            address.locality,
+            address.subAdminArea
+        )
+        return if (parts.isNotEmpty()) parts.joinToString(", ") else "Unknown Location"
+    }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "885187057446",
+    "project_id": "kajlagbe-7122b",
+    "storage_bucket": "kajlagbe-7122b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:885187057446:android:0d95e0c3f9955188eb13e7",
+        "android_client_info": {
+          "package_name": "com.hanif.kajlagbe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh9i6B423i2n6CCbKeu7ofPtM7cxVbfNQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

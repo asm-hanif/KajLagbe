@@ -1,0 +1,27 @@
+package com.hanif.kajlagbe
+
+object Routes {
+
+    const val AUTH_GATE = "authGate"
+    const val WELCOME = "welcome"
+    const val LOGIN = "login"
+    const val SIGNUP = "signup"
+
+    const val HOME = "home"
+    const val PROFILE = "profile"
+    const val SETTING = "setting"
+
+    const val REQUEST_JOB = "requestJob"
+    const val WORKER_DETAILS = "workerDetails"
+
+    const val USER_REQUESTS = "userRequests"
+    const val WORKER_REQUESTS = "workerRequests"
+
+    const val USER_INBOX = "userInbox"
+    const val WORKER_INBOX = "workerInbox"
+
+    const val CHAT = "chat"
+
+    // ✅ ADD THIS
+    const val WORKER_REGISTER = "workerRegister"
+}
